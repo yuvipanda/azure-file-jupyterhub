@@ -1,0 +1,63 @@
+# AKS doesn't support rbac
+rbac:
+   enabled: false
+# The v0.5 prePuller doesn't work on AKS
+prePuller:
+   enabled: false
+
+hub:
+  extraConfig: |
+
+    from tornado import gen
+    from kubespawner import KubeSpawner
+    import os
+
+    from kubernetes import client
+
+    class CustomSpawner(KubeSpawner):
+      @gen.coroutine
+      def get_pod_manifest(self):
+        pod = yield super().get_pod_manifest()
+        pod.spec.containers[0].security_context = client.V1SecurityContext(
+          privileged=True,
+          capabilities=client.V1Capabilities(
+            add=['SYS_ADMIN']
+          )
+        )
+        pod.spec.containers[0].env += [
+            client.V1EnvVar(
+                'CIFS_URL',
+                self._expand_user_properties('//uwhcde41117student.file.core.windows.net/studentdata/students/{username}')
+            ),
+            client.V1EnvVar(
+                'CIFS_USERNAME',
+                os.environ['CIFS_USERNAME']
+            ),
+            client.V1EnvVar(
+                'CIFS_PASSWORD',
+                os.environ['CIFS_PASSWORD']
+            )
+        ]
+
+
+        return pod
+
+    c.JupyterHub.spawner_class = CustomSpawner
+
+  db:
+    type: sqlite-memory
+
+singleuser:
+    uid: 0
+    fsGid: 0
+    extraEnv:
+      MOUNT_POINT: /home/jovyan
+      UID: 1000
+      GID: 1000
+    image:
+      name: yuvipanda/brookehub
+      tag: v6
+    cmd:
+      - /usr/local/bin/start-singleuser.sh
+    storage:
+      type: none
