@@ -14,20 +14,33 @@ hub:
 
     from kubernetes import client
 
+
+
     class CustomSpawner(KubeSpawner):
       @gen.coroutine
       def get_pod_manifest(self):
         pod = yield super().get_pod_manifest()
         pod.spec.containers[0].security_context = client.V1SecurityContext(
+          run_as_user=0,
           privileged=True,
           capabilities=client.V1Capabilities(
             add=['SYS_ADMIN']
           )
         )
+        parent_mount = '//uwhcde41117student.file.core.windows.net/studentdata/students'
+        if self.user.admin:
+          subdir = ''
+        else:
+          subdir = self._expand_user_properties('{username}')
+
         pod.spec.containers[0].env += [
             client.V1EnvVar(
-                'CIFS_URL',
-                self._expand_user_properties('//uwhcde41117student.file.core.windows.net/studentdata/students/{username}')
+                'CIFS_PARENT_URL',
+                parent_mount
+            ),
+            client.V1EnvVar(
+                'CIFS_SUBDIR',
+                subdir
             ),
             client.V1EnvVar(
                 'CIFS_USERNAME',
@@ -56,8 +69,16 @@ singleuser:
       GID: 1000
     image:
       name: yuvipanda/brookehub
-      tag: v6
+      tag: v12
     cmd:
       - /usr/local/bin/start-singleuser.sh
     storage:
       type: none
+
+auth:
+  admin:
+    users:
+      - bcraft@uw.edu
+      - rayhong@uw.edu
+      - antchen@uw.edu
+      - mdrouhar@uw.edu
