@@ -5,6 +5,12 @@ rbac:
 prePuller:
    enabled: false
 
+proxy:
+  https:
+    letsencrypt:
+      contactEmail: yuvipanda@gmail.com
+    hosts:
+      - hcde411.yuvi.in
 hub:
   extraConfig: |
 
