@@ -12,6 +12,9 @@ proxy:
     hosts:
       - hcde411.yuvi.in
 hub:
+  db:
+    pvc:
+      storageClassName: managed-premium
   extraConfig: |
 
     from tornado import gen
@@ -62,9 +65,6 @@ hub:
         return pod
 
     c.JupyterHub.spawner_class = CustomSpawner
-
-  db:
-    type: sqlite-memory
 
 singleuser:
     uid: 0
